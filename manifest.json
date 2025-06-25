@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Update Book Image",
+  "version": "1.0",
+  "description": "An extension to update book images on Amazon",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://leggi.amazon.it/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
