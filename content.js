@@ -84,20 +84,24 @@ function addSideImage(container, imageUrl, side) {
     if (!existingImage) {
       const img = document.createElement('img');
       img.src = imageUrl;
-      img.alt = 'Book ' + side + ' side';
+      //img.alt = 'Book ' + side + ' side';
       img.className = 'book-side-image';
       img.style.position = 'fixed';
-      img.style[side] = '0';
-      img.style.top = '0';
-      img.style.height = '100vh';
+
+      if ((side === "left") || (side === "right")) {
+console.log("Laterale");
+        img.style[side] = '0';
+        //img.style.width = '50px';
+      } else {
+console.log("Centrale");
+        img.style["left"] = '50%';
+//      img.style.width = '20px';
+      }
+      img.style.top = '50px';
+      img.style.height = '95vh';
       img.style.zIndex = '999';
       img.style.pointerEvents = 'none'; // Permette di cliccare attraverso l'immagine
-      // Aggiungi ombreggiatura per profondità
-      if (side === 'left') {
-        img.style.boxShadow = '5px 0 15px rgba(0, 0, 0, 0.3)';
-      } else {
-        img.style.boxShadow = '-5px 0 15px rgba(0, 0, 0, 0.3)';
-      }
+
       document.body.appendChild(img);
     }
   }
@@ -260,10 +264,31 @@ drawBookContent(ctx, percentage, canvas.width, canvas.height);
 
         // Aggiungi le immagini laterali solo se non sono già state aggiunte
         if (!imagesAdded) {
-          const buttonContainerRight = document.querySelector('.kr-chevron-container-right.chevron-container.right');
-          const buttonContainerLeft = document.querySelector('.kr-chevron-container-left.chevron-container');
-          addSideImage(buttonContainerLeft, 'https://raw.githubusercontent.com/jumpjack/kindlebar/refs/heads/main/libro-left.png', 'left');
-          addSideImage(buttonContainerRight, 'https://raw.githubusercontent.com/jumpjack/kindlebar/refs/heads/main/libro-right.png', 'right');
+// Seleziona il container principale
+const mainContainer = document.querySelector('.pagination-container');
+
+// Crea un nuovo div per l'immagine centrale
+const centerDiv = document.createElement('div');
+centerDiv.className = 'center-image-container';
+centerDiv.style.position = 'absolute';
+centerDiv.style.left = '50%';
+centerDiv.style.top = '0';
+centerDiv.style.transform = 'translateX(-50%)';
+centerDiv.style.height = '100%'; // Copre tutta l'altezza del container principale
+centerDiv.style.zIndex = '999';
+centerDiv.style.pointerEvents = 'none';
+
+// Aggiungi il nuovo div al container principale
+mainContainer.appendChild(centerDiv);
+
+// Ora aggiungi le immagini
+const buttonContainerRight = document.querySelector('.kr-chevron-container-right.chevron-container.right');
+const buttonContainerLeft = document.querySelector('.kr-chevron-container-left.chevron-container');
+
+addSideImage(buttonContainerLeft, 'https://raw.githubusercontent.com/jumpjack/kindlebar/refs/heads/main/libro-left.png', 'left');
+addSideImage(buttonContainerRight, 'https://raw.githubusercontent.com/jumpjack/kindlebar/refs/heads/main/libro-right.png', 'right');
+addSideImage(centerDiv, 'https://raw.githubusercontent.com/jumpjack/kindlebar/refs/heads/main/libro-center.png', 'center');
+
           imagesAdded = true; // Imposta il flag a true dopo aver aggiunto le immagini
         }
       }
@@ -312,5 +337,294 @@ console.log("Message",request.action);
     redrawBookContent();
     // Imposta un intervallo per eseguire la funzione ogni secondo
     setInterval(redrawBookContent, 1000);
+  }
+});
+
+
+/////////////////////
+
+// Configurazione container e stili
+const animationContainer = document.createElement('div');
+animationContainer.id = 'bookFlipContainer';
+Object.assign(animationContainer.style, {
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  width: '100%',
+  height: '100%',
+  pointerEvents: 'none',
+  zIndex: '9999'
+});
+document.body.appendChild(animationContainer);
+
+const style = document.createElement('style');
+style.textContent = `
+.flip-page {
+  position: absolute;
+  transform-origin: left center;
+  transition: none;
+  pointer-events: none;
+  backface-visibility: hidden;
+  box-shadow: -5px 5px 15px rgba(0,0,0,0.3);
+}
+`;
+document.head.appendChild(style);
+
+// Stato dell'animazione
+let isAnimating = false;
+
+// Intercetta il click sulla freccia destra
+document.addEventListener('mousedown', async (event) => {
+  const target = event.target.closest('#kr-chevron-right.chevron.round.right');
+  if (!target || isAnimating) return;
+
+console.log("[CONT] CLICK");
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  isAnimating = true;
+
+  try {
+    // Cattura lo screenshot usando l'API chrome
+const rightScreenshotDataUrl = await new Promise((resolve) => {
+  console.log("[CONT] RIGHT Screenshot request");
+  chrome.runtime.sendMessage({action: "captureRight"}, (response) => {
+    if (chrome.runtime.lastError) {
+      console.log("[CONT] RIGHT Screenshot ERROR");
+      console.error("Capture error:", chrome.runtime.lastError);
+      resolve(null);
+    } else {
+      console.log("[CONT] RIGHT Screenshot OK");
+      resolve(response?.rightScreenshotDataUrl);
+    }
+  });
+});
+
+// Dopo aver ottenuto rightScreenshotDataUrl, cattura lo screenshot sinistro
+const leftScreenshotDataUrl = await new Promise((resolve) => {
+  console.log("[CONT] LEFT Screenshot request");
+  chrome.runtime.sendMessage({action: "captureLeft"}, (response) => {
+    if (chrome.runtime.lastError) {
+      console.log("[CONT] LEFT Screenshot ERROR");
+      console.error("Capture error:", chrome.runtime.lastError);
+      resolve(null);
+    } else {
+      console.log("[CONT] LEFT Screenshot OK");
+      resolve(response?.leftScreenshotDataUrl);
+    }
+  });
+});
+
+    if ((leftScreenshotDataUrl) && (rightScreenshotDataUrl)) {
+      await startFlipAnimation(leftScreenshotDataUrl, rightScreenshotDataUrl);
+    }
+
+    // Esegui l'azione originale dopo l'animazione
+    setTimeout(() => {
+      target.dispatchEvent(new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      }));
+
+      isAnimating = false;
+    }, 10);
+
+    setTimeout(() => {
+      target.dispatchEvent(new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      }));
+
+      isAnimating = false;
+    }, 50);
+
+  } catch (error) {
+    console.error("Animation error:", error);
+    isAnimating = false;
+  }
+}, true);
+
+// Funzione principale di animazione
+async function startFlipAnimation(leftScreenshotDataUrl, rightScreenshotDataUrl) {
+  return new Promise((resolve) => {
+    animationContainer.innerHTML = '';
+
+    // Crea e mostra l'immagine sfocata sinistra (leggera)
+    const leftBlurredImg = new Image();
+    leftBlurredImg.src = leftScreenshotDataUrl;
+
+    // Crea e mostra l'immagine sfocata destra (molto marcata)
+    const rightBlurredImg = new Image();
+    rightBlurredImg.src = rightScreenshotDataUrl;
+
+    Promise.all([new Promise(res => leftBlurredImg.onload = res),
+                new Promise(res => rightBlurredImg.onload = res)]).then(() => {
+      const width = leftBlurredImg.width / 2;
+      const height = leftBlurredImg.height;
+
+      // Dimensioni proporzionali
+      const viewportHeight = window.innerHeight;
+      const scaleFactor = (viewportHeight * 0.8) / (height * 0.8);
+      const scaledWidth = width * scaleFactor;
+      const scaledHeight = height * scaleFactor;
+
+      // Preparazione canvas per sfocatura sinistra
+      const leftCanvas = document.createElement('canvas');
+      leftCanvas.width = width;
+      leftCanvas.height = height;
+      const leftCtx = leftCanvas.getContext('2d');
+
+      // Ritaglia e sfoca la metà sinistra
+      leftCtx.drawImage(
+        leftBlurredImg,
+        0, 55, width , height * 0.8,
+        0, 55, width , height * 0.8
+      );
+      leftCtx.filter = 'blur(12px)';
+      leftCtx.drawImage(leftCanvas, 0, 0);
+
+      // Preparazione canvas per sfocatura destra (più marcata)
+      const rightCanvas = document.createElement('canvas');
+      rightCanvas.width = width;
+      rightCanvas.height = height;
+      const rightCtx = rightCanvas.getContext('2d');
+
+      // Ritaglia e sfoca la metà destra
+      rightCtx.drawImage(
+        rightBlurredImg,
+        width, 55, width * 0.8, height * 0.8,
+        0, 55, width * 0.8, height * 0.8
+      );
+      rightCtx.filter = 'blur(20px)'; // Sfocatura molto più forte
+      rightCtx.drawImage(rightCanvas, 0, 0);
+
+      // Crea elementi immagine
+      const leftPage = document.createElement('img');
+      leftPage.src = leftCanvas.toDataURL();
+      leftPage.className = 'flip-page blurred-left';
+
+      const rightPage = document.createElement('img');
+      rightPage.src = rightCanvas.toDataURL();
+      rightPage.className = 'flip-page blurred-right';
+
+      // Stili per le immagini sfocate
+      Object.assign(leftPage.style, {
+        width: `${scaledWidth}px`,
+        height: `${scaledHeight}px`,
+        left: '0',
+        top: '0',
+        position: 'absolute',
+        opacity: '0.8',
+        filter: 'blur(12px)'
+      });
+
+      Object.assign(rightPage.style, {
+        width: `${scaledWidth}px`,
+        height: `${scaledHeight}px`,
+        right: '0',
+        top: '0',
+        position: 'absolute',
+        opacity: '0.9',
+        filter: 'blur(20px)'
+      });
+
+      // Aggiungi entrambe le immagini sfocate al container
+      animationContainer.appendChild(leftPage);
+      animationContainer.appendChild(rightPage);
+
+      // Aspetta un breve momento prima di iniziare l'animazione
+      setTimeout(() => {
+        // Crea l'immagine animata (non sfocata)
+        const img = new Image();
+        img.src = rightScreenshotDataUrl;
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = width;
+          canvas.height = height;
+
+          // Ritaglia la metà destra con margini
+          ctx.drawImage(
+            img,
+            width, 55, width * 0.8, height * 0.8,
+            0, 55, width * 0.8, height * 0.8
+          );
+
+          const page = document.createElement('img');
+          page.src = canvas.toDataURL();
+          page.className = 'flip-page animated';
+
+          Object.assign(page.style, {
+            width: `${scaledWidth}px`,
+            height: `${scaledHeight}px`,
+            right: '0',
+            top: '0',
+            position: 'absolute',
+            zIndex: '10'
+          });
+
+          animationContainer.appendChild(page);
+
+          // Animazione (come prima)
+          const startTime = performance.now();
+          const animationDuration = 2000;
+
+        function animateFrame(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / animationDuration, 1);
+          const angle = 360 * progress;
+
+          if (progress <= 0.5) {
+            scaleX = Math.max(0.1, 1 - 0.9 * (progress / 0.5));
+            posX = -(scaledWidth * progress);
+            posY = scaledHeight * 0.05 * progress;
+            page.style.transform = `
+              rotateY(${angle}deg)
+              perspective(${scaledWidth * 3}px)
+              scaleX(${scaleX})
+              translateY(${posY}px)
+            `;
+          } else {
+            scaleX = Math.max(0.1, 0.1 + 0.9 * ((progress - 0.5) / 0.5));
+            posX = -(scaledWidth * progress * 0.85);
+            posY = scaledHeight * 0.05 * (1 - progress);
+            page.style.transform = `
+              rotateY(${angle}deg)
+              perspective(${scaledWidth * 3}px)
+              scaleX(${scaleX})
+              translateX(${posX}px)
+              translateY(${posY}px)
+            `;
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(animateFrame);
+          } else {
+            // Rimuovi entrambe le immagini alla fine
+            animationContainer.removeChild(page);
+            animationContainer.removeChild(leftPage);
+            animationContainer.removeChild(rightPage);
+            resolve();
+          }
+        }
+
+
+
+          requestAnimationFrame(animateFrame);
+        };
+      }, 50); // Piccolo ritardo prima di iniziare l'animazione
+    });
+  });
+}
+// Listener per i messaggi di background (se necessario)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+console.log("[CONT]",request.action);
+
+  if (request.action === "ping") {
+console.log("[CONT] ping response");
+    sendResponse({status: "ready"});
   }
 });

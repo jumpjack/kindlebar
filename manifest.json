@@ -1,19 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "Update Book Image",
+  "name": "Kindlebar",
   "version": "1.0",
-  "description": "An extension to update book images on Amazon",
-  "permissions": ["activeTab", "scripting"],
-  "action": {
-    "default_popup": "popup.html"
-  },
+  "description": "Page flip animation on book navigation",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://leggi.amazon.it/*"],
-      "js": ["content.js"]
-    }
-  ]
+  "content_scripts": [{
+    "js": ["content.js"],
+    "matches": ["<all_urls>"],
+    "all_frames": true
+  }],
+  "action": {
+    "default_popup": "popup.html"
+  }
 }
