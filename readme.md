@@ -20,3 +20,43 @@ The bottom slider has been replaced by the lines representing the pages:
 
 ![image](https://github.com/user-attachments/assets/ff90f8b8-9502-4df6-8b3c-08c687d24052)
 
+# Installation
+
+## Prepare Your Extension Files
+
+Download whole repo as a .zip file and unpack it for example in c:\temp. 
+
+## Open Chrome Extensions Page
+
+In Chrome's address bar, type:
+
+`
+chrome://extensions
+`
+
+Press Enter.
+
+## Enable Developer Mode
+
+Toggle the switch in the top-right corner labeled "Developer mode" to ON (blue).
+
+## Load the Unpacked Extension
+
+- Click the "Load unpacked" button (top-left).
+- Navigate to the folder containing your extension files.
+- Click "Select Folder".
+- Select in c:\temp the folder named as the extension
+  
+## Pin the Extension
+
+- Click the Extensions puzzle icon (top-right of Chrome).
+- Pin your extension
+
+
+# Usage
+
+- Go to https://leggi.amazon.it/ ( https://read.amazon.com/ )  
+- Open your book
+- Once the book is loaded, click on the extension icon and then on the button: if the simulated pages are added to the book, everything is ready!
+- Now you will see the flip animation any time you'll change page of the book
+
