@@ -1,4 +1,4 @@
-A reading-progress bar for online kindle reader https://leggi.amazon.it/ which visually simulates the pages of a book.
+A reading-progress bar for online kindle reader https://leggi.amazon.it/ ( https://read.amazon.com/ )  which visually simulates the pages of a book.
 
 
 
